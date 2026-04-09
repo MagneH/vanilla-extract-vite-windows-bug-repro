@@ -10,7 +10,7 @@ root.innerHTML = `
   <main class="${box}">
     <h1>vanilla-extract Windows @id repro</h1>
     <p>
-      Visit <a href="/__repro">/__repro</a> while the dev server is running to trigger the failing lookup.
+      Visit <a href="/__repro">/__repro</a> while the dev server is running to exercise the plugin with an @id-wrapped absolute file path.
     </p>
   </main>
 `;

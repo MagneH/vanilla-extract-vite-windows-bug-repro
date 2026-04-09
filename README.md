@@ -1,6 +1,6 @@
-# vanilla-extract Vite `@id/C:/...` repro
+# vanilla-extract Vite `@id/absolute-path` repro
 
-Minimal repro for a `@vanilla-extract/vite-plugin` dev-mode failure when a workspace `*.css.ts` file is resolved as a Vite id shaped like `@id/C:/...`.
+Minimal repro for a `@vanilla-extract/vite-plugin` dev-mode failure when a workspace `*.css.ts` file is resolved from a Vite id wrapped in `@id/...`.
 
 This sandbox intentionally uses `vite@6.3.3` so it can run in CodeSandbox's default Node 20.12.x environment without the newer Vite Node floor or the rolldown native binding issue.
 
@@ -15,7 +15,7 @@ pnpm dev
 
 1. Start the dev server.
 2. Open `/__repro`.
-3. Observe the `No CSS for file` error coming from `@vanilla-extract/compiler`.
+3. Observe the JSON response.
 
 If CodeSandbox keeps an older failed install around, restart the sandbox after the dependency change so it reinstalls with the updated `package.json`.
 
@@ -23,16 +23,27 @@ If CodeSandbox keeps an older failed install around, restart the sandbox after t
 
 The app imports a `*.css.ts` file from a sibling package outside the Vite app root.
 
-The custom Vite plugin in `vite.config.ts` simulates the `@id/C:/...` id shape that has been observed in real projects:
+The custom route in `vite.config.ts` warms the real `*.css.ts` file and then calls vanilla-extract's own `resolveId` and `load` hooks with an `@id`-wrapped absolute path:
 
 ```txt
-/@id/C:/.../block.css.ts.vanilla.css
+/@id//Users/.../block.css.ts.vanilla.css
 ```
 
-That means this sandbox can reproduce the underlying bug on macOS/Linux too, even though the same id shape appears to occur naturally in real projects primarily on Windows.
+Using a real macOS/Linux absolute path avoids the extra cross-platform path semantics you get from fake `C:/...` ids on POSIX, while still exercising the same underlying `@id/absolute-path` normalization bug.
 
-That path shape causes `@vanilla-extract/vite-plugin` to look up CSS using a mismatched file id and throw:
+Expected behavior with the published plugin:
 
 ```txt
-Error: No CSS for file: .../@id/C:/.../block.css.ts
+500 Internal Server Error
+No CSS for file: .../@id/Users/.../block.css.ts
+```
+
+Expected behavior with the fixed fork:
+
+```json
+{
+  "source": "/@id//Users/.../block.css.ts.vanilla.css",
+  "resolvedId": "/Users/.../block.css.ts.vanilla.css",
+  "loadedCss": true
+}
 ```
